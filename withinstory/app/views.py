@@ -9,7 +9,7 @@ from django.template.context import RequestContext
 class RegistrationForm(UserCreationForm):
     class Meta:
         model = UserProfile
-        fields = ('username', 'email', 'password1', 'password2')
+        fields = ('name', 'username', 'email', 'password1', 'password2')
 
 
 def register(request):
