@@ -1,0 +1,186 @@
+<html>
+    <head>
+        <title>Backbone</title>
+        <script src="{{ STATIC_URL }}js/jquery-1.7.1.min.js"></script>
+        <script src="{{ STATIC_URL }}js/json2.js"></script>
+        <script src="{{ STATIC_URL }}js/underscore-min.js"></script>
+        <script src="{{ STATIC_URL }}js/backbone-min.js"></script>
+    </head>
+    <body>
+        <script>
+            var auth;
+            var username;
+            var useruri;
+            var apiUrl = '/api/v1/';
+            $(function(){
+                window.User = Backbone.Model.extend({
+                    urlRoot: apiUrl + 'userprofile/'
+                });
+                window.UserCollection = Backbone.Collection.extend({
+                    model: User,
+                    url: apiUrl + 'userprofile/',
+                    parse: function(response){
+                        return response.objects;
+                    }
+                });
+                window.Story = Backbone.Model.extend({
+                    urlRoot: apiUrl + 'story/',
+                    defaults: {
+                        'id': null,
+                        'title': 'Story Title',
+                        'introduction': 'Introduction',
+                        'body': 'Body of Story'
+                    }
+                });
+                window.StoryCollection = Backbone.Collection.extend({
+                    model: Story,
+                    url: apiUrl + 'story/',
+                    parse: function(response){
+                        return response.objects;
+                    }
+                });
+                window.StoryDetailView = Backbone.View.extend({
+                    template: '<input type="hidden" id="id" value="<%= id %>"><input type="text" id="title" value="<%= title %>"><br><input type="text" id="introduction" value="<%= introduction %>"><br><textarea id="body"><%= body %></textarea><br><button class="save">Save</button>',
+                    events: {
+                        'click .save': 'saveStory'
+                    },
+                    saveStory: function() {
+                        this.model.set({
+                            'title': $('#title').val(),
+                            'introduction': $('#introduction').val(),
+                            'body': $('#body').val()
+                        });
+                        this.model.save({'author': useruri}, {
+                            'headers': auth.headers,
+                            'success': function() {
+                                alert('Story successfully saved.');
+                            }
+                        });
+                    },
+                    render: function() {
+                        $(this.el).html(_.template(this.template, this.model.toJSON()));
+                        return this;
+                    }
+                });
+                window.StoryListItemView = Backbone.View.extend({
+                    tagName: 'li',
+                    events: {
+                        'click .delete': 'deleteStory'
+                    },
+                    template: '<a href="#story/<%= id %>/"><%= title %></a> <span class="delete">Delete</span>',
+                    render: function() {
+                        $(this.el).html(_.template(this.template, this.model.toJSON()));
+                        return this;
+                    },
+                    deleteStory: function() {
+                        this.model.destroy({
+                            'success': function (){
+                                alert('Story deleted successfully');
+                                window.location = '/';
+                            },
+                            'error': function (){
+                                alert('You are not the author of this story.')
+                            },
+                            'headers': auth.headers
+                        });
+                    }
+                });
+                window.StoryListView = Backbone.View.extend({
+                    tagName: 'ul',
+                    render: function() {
+                        $(this.el).html('');
+                        _.each(this.collection.models, function(model){
+                            $(this.el).append(new StoryListItemView({'model': model}).render().el);
+                        }, this);
+                        return this;
+                    }
+                });
+                var AppRouter = Backbone.Router.extend({
+                    routes: {
+                        '': 'start',
+                        'story/new/': 'newStory',
+                        'story/:id/': 'story'
+                    },
+                    newStory: function() {
+                        this.newStoryView = new StoryDetailView({'model': new Story()});
+                        $('#content').html(this.newStoryView.render().el);
+                    },
+                    setup: function(callback, obj) {
+                        if (this.storyCollection && this.userCollection) {
+                            if (callback) callback(obj);
+                        }
+                        else {
+                            // TODO: Refactoring to accomodate arbit collection fetch async
+                            this.storyCollection = new StoryCollection();
+                            this.userCollection = new UserCollection();
+                            this.userCollection.fetch({
+                                'async': false
+                            });
+                            this.storyCollection.fetch({
+                                'success': function() {
+                                    if (callback) {
+                                        callback(obj);
+                                    }
+                                }
+                            });
+                        }
+                    },
+                    start: function() {
+                        this.setup(function(obj){
+                            obj.storyListView = new StoryListView({collection: obj.storyCollection});
+                            $('#content').html(obj.storyListView.render().el);
+                        }, this);
+                    },
+                    story: function(id) {
+                        this.setup(function(obj){
+                            var model = _.find(obj.storyCollection.models, function(model){
+                                if (model.id == id) {
+                                    return true;
+                                }
+                                else {
+                                    return false;
+                                }
+                            });
+                            if (model) {
+                                $('#content').html(new StoryDetailView({model: model}).render().el);
+                            }
+                        }, this);
+                    }
+                });
+                var app = new AppRouter();
+                Backbone.history.start();
+                
+                //Get API Key
+                $.ajax({
+                    url: '/getapikey/',
+                    success: function(data) {
+                        auth = {'headers': {'Authorization': 'ApiKey ' + data}};
+                        username = data.split(':')[0];
+                        useruri = _.find(app.userCollection.models, function(model){
+                            if (model.get('username') == username){
+                                return true;
+                            }
+                            else {
+                                return false;
+                            }
+                        }).get('resource_uri');
+                        $('#login').html('<a href="/logout/">Logout</a>');
+                    },
+                    error: function(data, error, response) {
+                        if (response == 'FORBIDDEN') {
+                            $('#login').html('<a href="/login/">Login</a>');
+                        }
+                        else {
+                            $('#login').html('<a href="/logout/">Logout</a>');
+                            alert('There was an error while retrieving your API Key');
+                        }
+                    }
+                });
+            });
+        </script>
+        <a href="/">Home</a>
+        <div id="login"></div>
+        <a href="#story/new/">New Story</a>
+        <div id="content"></div>
+    </body>
+</html>

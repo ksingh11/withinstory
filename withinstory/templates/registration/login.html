@@ -1,0 +1,22 @@
+<html>
+    <head>
+        <title>Registration</title>
+    </head>
+    <body>
+        {% if form.errors %}
+            <p class="error">Sorry, that's not a valid username or password</p>
+        {% endif %}
+        <form action="" method="post">
+            {% csrf_token %}
+            <label for="username">User name:</label>
+            <input type="text" name="username" value="" id="username"><br>
+            <label for="password">Password:</label>
+            <input type="password" name="password" value="" id="password"><br>
+            <input type="submit" value="Login" />
+            <input type="hidden" name="next" value="/" />
+        </form>
+        <p>
+            <a href="/accounts/password/reset/">Forgot password?</a>
+        </p>
+    </body>
+</html>

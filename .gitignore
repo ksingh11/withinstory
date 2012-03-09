@@ -1,3 +1,4 @@
+withinstory/templates/assets/*
 *.pyc
 *.pyo
 .project
