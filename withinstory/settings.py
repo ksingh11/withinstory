@@ -64,7 +64,7 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, '../../withinstory-static/static/assets
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
 #STATIC_URL = '/assets/'
-STATIC_URL = 'http://withinstory-static/assets/'
+STATIC_URL = 'http://withinstory-static.herokuapp.com/assets/'
 
 # URL prefix for admin static files -- CSS, JavaScript and images.
 # Make sure to use a trailing slash.
