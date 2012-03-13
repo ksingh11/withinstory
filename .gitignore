@@ -1,6 +1,7 @@
 withinstory/templates/assets/*
 *.pyc
 *.pyo
+*.py~
 .project
 .pydevproject
 
